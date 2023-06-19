@@ -6,6 +6,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+import pandas as pd
+import pprint
 
 # Set up browser options
 options = Options()
@@ -32,7 +34,7 @@ headers = {
 url = 'https://www.qatarairways.com/app/booking/flight-selection'
 params = {
     'upsellCallId': '123',
-    'bookingClass': 'B',
+    'bookingClass': 'E',
     'tripType': 'O',
     'selLang': 'en',
     'fromStation': 'ISB',
@@ -48,7 +50,7 @@ params = {
     'promoCode': '',
     'flexibleDate': 'off',
     'cid': 'SXIN23456993M',
-    'currency':'USD'
+    'currency': 'USD'
 }
 
 # Construct the URL with parameters
@@ -65,6 +67,8 @@ elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[id
 
 # Extract the flight details
 # flight_elements = browser.find_elements(By.CSS_SELECTOR, '[id^="at-flight-search-result-"]')
+
+flights = []
 for flight_element in elements:
 
     # get html for each flight element
@@ -72,20 +76,53 @@ for flight_element in elements:
     soup = BeautifulSoup(html_content, "html.parser")
     flight_card = soup.find('booking-flight-card')
 
-    flight_info = {
-        'tag': flight_card.find('span', class_='flight-card__tag').text.strip(),
-        'departure_time': flight_card.find('h3', class_='at-flight-card-depart-time').text.strip(),
-        'origin_code': flight_card.find('p', class_='at-flight-card-origin-code').text.strip(),
-        'stop_info': flight_card.find('p', class_='flight-card__stop-info').text.strip(),
-        'arrival_time': flight_card.find('span', class_='at-flight-card-arrival-time').text.strip(),
-        'destination_code': flight_card.find('p', class_='at-flight-card-destination-code').text.strip(),
-        'flight_details_link': flight_card.find('a', class_='flight-card__link')['href']
-    }
+    flight_info = {}
 
-    flight_name = flight_element.text
-    print("-----------------------")
-    print(flight_name)
-    print("-----------------------")
+    tag_element = flight_card.find('span', class_='flight-card__tag')
+    flight_info['tag'] = tag_element.text.strip() if tag_element else ''
+
+    departure_time_element = flight_card.find('h3', class_='at-flight-card-depart-time')
+    flight_info['departure_time'] = departure_time_element.text.strip() if departure_time_element else ''
+
+    origin_code_element = flight_card.find('p', class_='at-flight-card-origin-code')
+    flight_info['origin_code'] = origin_code_element.text.strip() if origin_code_element else ''
+
+    stop_info_element = flight_card.find('p', class_='flight-card__stop-info')
+    flight_info['stop_info'] = stop_info_element.text.strip() if stop_info_element else ''
+
+    arrival_time_element = flight_card.find('span', class_='at-flight-card-arrival-time')
+    flight_info['arrival_time'] = arrival_time_element.text.strip() if arrival_time_element else ''
+
+    destination_code_element = flight_card.find('p', class_='at-flight-card-destination-code')
+    flight_info['destination_code'] = destination_code_element.text.strip() if destination_code_element else ''
+
+    cabin_cards = soup.find_all('a', class_='cabin-card')
+    cabin_info = []
+
+
+    for cabin_card in cabin_cards:
+        cabin = {}
+
+        cabin_class_element = cabin_card.find('span', class_='ng-tns-c88-1')
+
+        cabin['cabin_class'] = cabin_class_element.text.strip() if cabin_class_element else ''
+
+        price_element = cabin_card.find('span', class_='fit-child ng-tns-c88-1')
+        cabin['price'] = price_element.text.strip() if price_element else ''
+
+        cabin_info.append(cabin)
+
+
+    flight_info['cabin_info'] = cabin_info
+
+    flights.append(flight_info)
+
+
 
 # Close the browser
+
+df = pd.DataFrame(flights)
+x = 1
 browser.quit()
+
+
