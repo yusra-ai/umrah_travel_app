@@ -7,7 +7,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pandas as pd
-import pprint
+import matplotlib.pyplot as plt
+
 
 # Set up browser options
 options = Options()
@@ -98,22 +99,20 @@ for flight_element in elements:
 
     cabin_cards = soup.find_all('a', class_='cabin-card')
     cabin_info = []
+    # cabin_class_seen = []
 
 
     for cabin_card in cabin_cards:
         cabin = {}
 
-        cabin_class_element = cabin_card.find('span', class_='ng-tns-c88-1')
+        cabin_class_element = cabin_card.find('h5', class_='cabin-class')
+        cabin_price_element = cabin_card.find('span', class_='fit-child')
 
-        cabin['cabin_class'] = cabin_class_element.text.strip() if cabin_class_element else ''
+        cabin_class = cabin_class_element.text.strip() if cabin_class_element else ''
+        cabin_price = cabin_price_element.text.strip() if cabin_price_element else ''
 
-        price_element = cabin_card.find('span', class_='fit-child ng-tns-c88-1')
-        cabin['price'] = price_element.text.strip() if price_element else ''
+        flight_info[cabin_class] = cabin_price
 
-        cabin_info.append(cabin)
-
-
-    flight_info['cabin_info'] = cabin_info
 
     flights.append(flight_info)
 
@@ -122,6 +121,18 @@ for flight_element in elements:
 # Close the browser
 
 df = pd.DataFrame(flights)
+
+
+# Plot the line graph
+plt.plot(df['departure_time'], df['Economy'])
+plt.plot(df['departure_time'], df['Business'])
+
+plt.xlabel('Time')
+plt.ylabel('Price')
+plt.title('Flight Prices Over Time')
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.show()
 x = 1
 browser.quit()
 
